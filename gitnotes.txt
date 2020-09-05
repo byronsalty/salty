@@ -1,0 +1,47 @@
+Process...
+
+== Create local branch ==
+
+Before you code anything, create a local branch of the code and check it out to start working in it.
+
+But first make sure you have the latest - this will make merging easier later.
+
+'git branch checkout master'
+
+'git fetch'
+'git pull'
+
+'git branch <descriptive name of work>'
+
+'git checkout <descriptive name of work>'
+
+== Make your changes ==
+
+<Edit files to your liking>
+
+Oh and test your changes ... until you're ready to share.
+
+== Commit them to your local branch ==
+
+'git status'
+'git add .'
+'git status'
+'git commit -m "comment about changes"'
+
+== Minimize changes vs the master by getting the latest ==
+
+'git checkout master'
+'git fetch'
+'git pull'
+'git checkout <yourbranch'
+'git rebase master'
+
+== Push your local branch to prepare for Pull-Request ==
+
+'git push origin <branch name>'
+
+Assuming you are using github.com...
+
+Go into Github.com dashboard, find your new branch and click the button to start a pull-request. Enter a description as needed.
+
+
