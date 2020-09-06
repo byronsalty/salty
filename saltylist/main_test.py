@@ -1,4 +1,4 @@
-# Copyright 2018 Google Inc. All Rights Reserved.
+# Copyright 2015 Google Inc. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,4 +21,3 @@ def test_index():
 
     r = client.get('/')
     assert r.status_code == 200
-    assert 'Hello World' in r.data.decode('utf-8')
