@@ -9,6 +9,33 @@
        * TODO(DEVELOPER): Paste the initialization snippet from:
        * http://console.firebase.google.com > Overview > Add Firebase to your web app.
        ***************************************************************************************** -->
+  
+
+  <!-- The core Firebase JS SDK is always required and must be listed first -->
+  <script src="https://www.gstatic.com/firebasejs/7.19.1/firebase-app.js"></script>
+
+  <!-- TODO: Add SDKs for Firebase products that you want to use
+      https://firebase.google.com/docs/web/setup#available-libraries -->
+  <script src="https://www.gstatic.com/firebasejs/7.19.1/firebase-analytics.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/7.19.1/firebase-auth.js"></script>
+
+  <script>
+    // Your web app's Firebase configuration
+    var firebaseConfig = {
+      apiKey: "AIzaSyDJgdMUow6u4YveImCvWSuBfEWf9mywMEU",
+      authDomain: "saltylist.firebaseapp.com",
+      databaseURL: "https://saltylist.firebaseio.com",
+      projectId: "saltylist",
+      storageBucket: "saltylist.appspot.com",
+      messagingSenderId: "525223355237",
+      appId: "1:525223355237:web:2165192ae349435e90b78c",
+      measurementId: "G-JE80FB5K6X"
+    };
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    firebase.analytics();
+  </script>
+
   <!-- [END gae_python38_auth_init_firebase] -->
   <script>
     if (typeof firebase === 'undefined') {
@@ -18,8 +45,11 @@
     }
   </script>
   <!-- [START gae_python38_auth_include_firebaseui] -->
+
+ 
   <script src="https://www.gstatic.com/firebasejs/ui/4.4.0/firebase-ui-auth.js"></script>
   <link type="text/css" rel="stylesheet" href="https://www.gstatic.com/firebasejs/ui/4.4.0/firebase-ui-auth.css" />
+  
   <!-- [END gae_python38_auth_include_firebaseui] -->
   <script src="{{ url_for('static', filename='script.js') }}"></script>
   <link type="text/css" rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
