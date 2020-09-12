@@ -20,6 +20,8 @@ from google.auth.transport import requests
 from google.cloud import datastore
 import google.oauth2.id_token
 
+import logging
+
 firebase_request_adapter = requests.Request()
 # [END gae_python38_auth_verify_token]
 
@@ -44,6 +46,25 @@ def fetch_times(email, limit):
     times = query.fetch(limit=limit)
 
     return times
+
+
+@app.route('/today')
+def today():
+
+    try:
+        offset = int(request.args.get("offset").strip())
+    except:
+        offset = 0
+
+    print("offset is %s" % offset)
+
+    name = "Jane Doe"
+    date = datetime.datetime.today()
+    checks = ["Brush Teeth", "Take Vitamins"]
+    return render_template (
+        'today.json',
+        checks=checks, day=date, name=name, offset=offset
+        )
 
 
 # [START gae_python38_auth_verify_token]

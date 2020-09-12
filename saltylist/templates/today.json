@@ -1,0 +1,6 @@
+{
+    "date": "{{day.year}}-{{day.month}}-{{day.day}}",
+    "offset": {{offset}},
+    "name": "{{name}}",
+    "checks": {{checks}}
+}
