@@ -50,7 +50,7 @@ def fetch_times(email, limit):
 
 @app.route('/today.json')
 def today():
-    #self.response.headers['Content-Type'] = 'application/json'
+    
     try:
         offset = int(request.args.get("offset").strip())
     except:
@@ -64,14 +64,6 @@ def today():
         "checks": ["Brush Teeth", "Take Vitamins"],
         "offset": offset
     }
-    # name = "Jane Doe"
-    # date = 
-    # checks = ["Brush Teeth", "Take Vitamins"]
-    #checks = []
-    # resp = make_response(render_template(
-    #     'today.json',
-    #     checks=checks, day=date, name=name, offset=offset
-    #     ))
     resp = make_response(jsonify(body))
     resp.mimetype = 'application/json'
     return resp
