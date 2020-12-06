@@ -1,8 +1,6 @@
 cd appengine
 
-virtualenv --python python3 ~/envs/hello_world
-
-source ~/envs/hello_world/bin/activate
+virtualenv --python python3 ~/envs/saltylist
 
 pip install -r requirements.txt
 
