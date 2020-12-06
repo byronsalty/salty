@@ -15,7 +15,7 @@
 import datetime
 
 # [START gae_python38_auth_verify_token]
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, make_response, jsonify
 from google.auth.transport import requests
 from google.cloud import datastore
 import google.oauth2.id_token
@@ -48,9 +48,9 @@ def fetch_times(email, limit):
     return times
 
 
-@app.route('/today')
+@app.route('/today.json')
 def today():
-
+    #self.response.headers['Content-Type'] = 'application/json'
     try:
         offset = int(request.args.get("offset").strip())
     except:
@@ -58,13 +58,24 @@ def today():
 
     print("offset is %s" % offset)
 
-    name = "Jane Doe"
-    date = datetime.datetime.today()
-    checks = ["Brush Teeth", "Take Vitamins"]
-    return render_template (
-        'today.json',
-        checks=checks, day=date, name=name, offset=offset
-        )
+    body = {
+        "name": "Jane Doe",
+        "date": datetime.datetime.today(),
+        "checks": ["Brush Teeth", "Take Vitamins"],
+        "offset": offset
+    }
+    # name = "Jane Doe"
+    # date = 
+    # checks = ["Brush Teeth", "Take Vitamins"]
+    #checks = []
+    # resp = make_response(render_template(
+    #     'today.json',
+    #     checks=checks, day=date, name=name, offset=offset
+    #     ))
+    resp = make_response(jsonify(body))
+    resp.mimetype = 'application/json'
+    return resp
+    
 
 
 # [START gae_python38_auth_verify_token]
