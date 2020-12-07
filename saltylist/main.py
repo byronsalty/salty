@@ -29,6 +29,38 @@ datastore_client = datastore.Client()
 
 app = Flask(__name__)
 
+def find_matches(rules, offset):
+    fake_list = [
+        {"title": "Play Guitar",
+        "type": "DOW",
+        "days": [0,2,4]},
+        {"title": "Weigh In",
+        "type": "DOW",
+        "days": [0,1,2,3,4,5,6]},
+        {"title": "Check Portal",
+        "type": "DOW",
+        "days": [0]}
+    ]
+
+    rules = fake_list
+    delt = datetime.timedelta(days=offset)
+    target_date = datetime.datetime.today() + delt
+    dow = target_date.weekday()
+    dom = int(target_date.strftime("%d"))
+
+
+    print("target date is %s" % target_date)
+    print("dow is %s" % dow)
+    print("dom is %s" % dom)
+
+    arr = []
+    
+    # Check matching DOW rules
+    for rl in [x for x in rules if x['type'] == "DOW"]:
+        if dow in rl["days"]:
+            arr.append(rl["title"])
+    
+    return arr
 
 def store_time(email, dt):
     entity = datastore.Entity(key=datastore_client.key('User', email, 'visit'))
@@ -68,6 +100,42 @@ def today():
     resp.mimetype = 'application/json'
     return resp
     
+@app.route('/user.json')
+def user():
+    id_token = request.cookies.get("token")
+    error_message = None
+    body = {}
+
+    try:
+        offset = int(request.args.get("offset").strip())
+    except:
+        offset = 0
+
+
+
+    print("offset is %s" % offset)
+
+    if id_token:
+        try:
+            user = google.oauth2.id_token.verify_firebase_token(
+                id_token, firebase_request_adapter)
+
+
+            checks = find_matches(None, offset)
+
+            body = {"email": user['email'],
+                "checks": checks
+            }
+
+            resp = make_response(jsonify(body))
+        except ValueError as exc:
+            # This will be raised if the token is expired or any other
+            # verification checks fail.
+            error_message = str(exc)
+
+    resp = make_response(jsonify(body))
+    resp.mimetype = 'application/json'
+    return resp
 
 
 # [START gae_python38_auth_verify_token]
