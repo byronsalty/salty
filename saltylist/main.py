@@ -66,7 +66,7 @@ def find_rule_matches(rules, offset):
     
     # Check matching Day of Month rules
     for rl in [x for x in rules if x['type'] == "dom"]:
-        if dow in rl["days"]:
+        if dom in rl["days"]:
             arr.append(rl["title"])
 
     return arr
@@ -98,87 +98,43 @@ def fetch_rules(email, limit):
 
 # def get_or_create_rule(
 
+def rules_inside(user):
+    rules = fetch_rules(user['email'], 50)
 
-@app.route('/rules.json')
-def rules():
-    id_token = request.cookies.get("token")
-    error_message = None
-    body = {}
+    body = {
+        "email": user['email'],
+        "rules": list(rules)
+    }
+    return body
 
-    if id_token:
-        try:
-            user = google.oauth2.id_token.verify_firebase_token(
-                id_token, firebase_request_adapter)
+def add_rule_inside(user):
+    try:
+        ruleType = request.args.get("type").strip().lower()
+        title = request.args.get("title").strip()
+        days = [int(x) for x in request.args.get("days").split(",")]
+    except:
+        print("bad input")
+        abort(400)
 
+    email = user['email']
+    ancestor = datastore_client.key('User', email)
 
-            rules = fetch_rules(user['email'], 50)
+    body = {
+        'type': ruleType,
+        'title': title,
+        'days': days
+    }
 
-            body = {
-                "email": user['email'],
-                "rules": list(rules)
-            }
-        except ValueError as exc:
-            # This will be raised if the token is expired or any other
-            # verification checks fail.
-            error_message = str(exc)
+    rule_key = ruleType + "-" + title
 
-    resp = make_response(jsonify(body))
-    resp.mimetype = 'application/json'
-    return resp
+    entity = datastore.Entity(key=datastore_client.key('User', email, 'rule', rule_key))
+    entity.update(body)
 
-@app.route('/addRule.json')
-def addRule():
-    id_token = request.cookies.get("token")
-    error_message = None
-    body = {}
+    datastore_client.put(entity)
 
-    if id_token:
-        try:
-            ruleType = request.args.get("type").strip().lower()
-            title = request.args.get("title").strip()
-            days = [int(x) for x in request.args.get("days").split(",")]
+    return body
 
-        except:
-            print("bad input")
-            abort(400)
-
-        try:
-
-            user = google.oauth2.id_token.verify_firebase_token(
-                id_token, firebase_request_adapter)
-            email = user['email']
-            ancestor = datastore_client.key('User', email)
-
-            #print("days: " + days)
-
-            body = {
-                'type': ruleType,
-                'title': title,
-                'days': days
-            }
-
-            rule_key = ruleType + "-" + title
-
-            entity = datastore.Entity(key=datastore_client.key('User', email, 'rule', rule_key))
-            entity.update(body)
-
-            datastore_client.put(entity)
-        except ValueError as exc:
-            # This will be raised if the token is expired or any other
-            # verification checks fail.
-            error_message = str(exc)
-
-    else:
-        print("not logged in")
-        abort(401)
-
-    resp = make_response(jsonify(body))
-    resp.mimetype = 'application/json'
-    return resp
-
-@app.route('/today.json')
-def today():
-    
+def today_inside(user):
     try:
         offset = int(request.args.get("offset").strip())
     except:
@@ -186,41 +142,26 @@ def today():
 
     print("offset is %s" % offset)
 
+    rules = fetch_rules(user['email'], 50)
+    checks = find_rule_matches(list(rules), offset)
+
     body = {
-        "name": "Jane Doe",
-        "date": datetime.datetime.today(),
-        "checks": ["Brush Teeth", "Take Vitamins"],
-        "offset": offset
+        "email": user['email'],
+        "checks": checks
     }
-    resp = make_response(jsonify(body))
-    resp.mimetype = 'application/json'
-    return resp
-    
-@app.route('/user.json')
-def user():
+    return body
+
+def gen_handler(inside_fnc):
     id_token = request.cookies.get("token")
     error_message = None
     body = {}
 
     if id_token:
         try:
-            offset = int(request.args.get("offset").strip())
-        except:
-            offset = 0
-
-        print("offset is %s" % offset)
-        try:
             user = google.oauth2.id_token.verify_firebase_token(
                 id_token, firebase_request_adapter)
 
-
-            rules = fetch_rules(user['email'], 50)
-            checks = find_rule_matches(list(rules), offset)
-
-            body = {
-                "email": user['email'],
-                "checks": checks
-            }
+            body = inside_fnc(user)
         except ValueError as exc:
             # This will be raised if the token is expired or any other
             # verification checks fail.
@@ -232,6 +173,18 @@ def user():
     resp = make_response(jsonify(body))
     resp.mimetype = 'application/json'
     return resp
+
+@app.route('/rules.json')
+def rules():
+    return gen_handler(rules_inside)
+
+@app.route('/addRule.json')
+def addRule():
+    return gen_handler(add_rule_inside)
+    
+@app.route('/today.json')
+def today():
+    return gen_handler(today_inside)
 
 
 # [START gae_python38_auth_verify_token]
