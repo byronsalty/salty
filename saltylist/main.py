@@ -15,7 +15,7 @@
 import datetime
 
 # [START gae_python38_auth_verify_token]
-from flask import Flask, render_template, request, make_response, jsonify
+from flask import Flask, render_template, request, make_response, jsonify, abort
 from google.auth.transport import requests
 from google.cloud import datastore
 import google.oauth2.id_token
@@ -29,24 +29,28 @@ datastore_client = datastore.Client()
 
 app = Flask(__name__)
 
-def find_matches(rules, offset):
-    fake_list = [
-        {"title": "Play Guitar",
-        "type": "DOW",
-        "days": [0,2,4]},
-        {"title": "Weigh In",
-        "type": "DOW",
-        "days": [0,1,2,3,4,5,6]},
-        {"title": "Check Portal",
-        "type": "DOW",
-        "days": [0]}
-    ]
+def find_rule_matches(rules, offset):
+    # fake_list = [
+    #     {"title": "Play Guitar",
+    #     "type": "dow",
+    #     "days": [0,2,4]},
+    #     {"title": "Weigh In",
+    #     "type": "dow",
+    #     "days": [0,1,2,3,4,5,6]},
+    #     {"title": "Check Portal",
+    #     "type": "dow",
+    #     "days": [0]},
+    #     {"title": "Pay Rent",
+    #     "type": "dom",
+    #     "days": [1,15]}
 
-    rules = fake_list
+    # ]
+
+    # rules = fake_list
     delt = datetime.timedelta(days=offset)
     target_date = datetime.datetime.today() + delt
     dow = target_date.weekday()
-    dom = int(target_date.strftime("%d"))
+    dom = target_date.day
 
 
     print("target date is %s" % target_date)
@@ -55,11 +59,16 @@ def find_matches(rules, offset):
 
     arr = []
     
-    # Check matching DOW rules
-    for rl in [x for x in rules if x['type'] == "DOW"]:
+    # Check matching Day of Week rules
+    for rl in [x for x in rules if x['type'] == "dow"]:
         if dow in rl["days"]:
             arr.append(rl["title"])
     
+    # Check matching Day of Month rules
+    for rl in [x for x in rules if x['type'] == "dom"]:
+        if dow in rl["days"]:
+            arr.append(rl["title"])
+
     return arr
 
 def store_time(email, dt):
@@ -79,6 +88,93 @@ def fetch_times(email, limit):
 
     return times
 
+def fetch_rules(email, limit):
+    ancestor = datastore_client.key('User', email)
+    query = datastore_client.query(kind='rule', ancestor=ancestor)
+
+    rules = query.fetch(limit=limit)
+
+    return rules
+
+# def get_or_create_rule(
+
+
+@app.route('/rules.json')
+def rules():
+    id_token = request.cookies.get("token")
+    error_message = None
+    body = {}
+
+    if id_token:
+        try:
+            user = google.oauth2.id_token.verify_firebase_token(
+                id_token, firebase_request_adapter)
+
+
+            rules = fetch_rules(user['email'], 50)
+
+            body = {
+                "email": user['email'],
+                "rules": list(rules)
+            }
+        except ValueError as exc:
+            # This will be raised if the token is expired or any other
+            # verification checks fail.
+            error_message = str(exc)
+
+    resp = make_response(jsonify(body))
+    resp.mimetype = 'application/json'
+    return resp
+
+@app.route('/addRule.json')
+def addRule():
+    id_token = request.cookies.get("token")
+    error_message = None
+    body = {}
+
+    if id_token:
+        try:
+            ruleType = request.args.get("type").strip().lower()
+            title = request.args.get("title").strip()
+            days = [int(x) for x in request.args.get("days").split(",")]
+
+        except:
+            print("bad input")
+            abort(400)
+
+        try:
+
+            user = google.oauth2.id_token.verify_firebase_token(
+                id_token, firebase_request_adapter)
+            email = user['email']
+            ancestor = datastore_client.key('User', email)
+
+            #print("days: " + days)
+
+            body = {
+                'type': ruleType,
+                'title': title,
+                'days': days
+            }
+
+            rule_key = ruleType + "-" + title
+
+            entity = datastore.Entity(key=datastore_client.key('User', email, 'rule', rule_key))
+            entity.update(body)
+
+            datastore_client.put(entity)
+        except ValueError as exc:
+            # This will be raised if the token is expired or any other
+            # verification checks fail.
+            error_message = str(exc)
+
+    else:
+        print("not logged in")
+        abort(401)
+
+    resp = make_response(jsonify(body))
+    resp.mimetype = 'application/json'
+    return resp
 
 @app.route('/today.json')
 def today():
@@ -106,32 +202,32 @@ def user():
     error_message = None
     body = {}
 
-    try:
-        offset = int(request.args.get("offset").strip())
-    except:
-        offset = 0
-
-
-
-    print("offset is %s" % offset)
-
     if id_token:
+        try:
+            offset = int(request.args.get("offset").strip())
+        except:
+            offset = 0
+
+        print("offset is %s" % offset)
         try:
             user = google.oauth2.id_token.verify_firebase_token(
                 id_token, firebase_request_adapter)
 
 
-            checks = find_matches(None, offset)
+            rules = fetch_rules(user['email'], 50)
+            checks = find_rule_matches(list(rules), offset)
 
-            body = {"email": user['email'],
+            body = {
+                "email": user['email'],
                 "checks": checks
             }
-
-            resp = make_response(jsonify(body))
         except ValueError as exc:
             # This will be raised if the token is expired or any other
             # verification checks fail.
             error_message = str(exc)
+    else:
+        print("not logged in")
+        abort(401)
 
     resp = make_response(jsonify(body))
     resp.mimetype = 'application/json'

@@ -9,6 +9,4 @@ indexes:
 - kind: rule
   ancestor: yes
   properties:
-  - name: active
-  - name: create_dt
-    direction: asc
+  - name: type
